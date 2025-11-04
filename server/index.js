@@ -13,10 +13,29 @@ const PORT = process.env.PORT || 5000;
 
 // middleware
 app.use(helmet());
+
+// --- CORS FIX ---
+// Define all origins that are allowed to make requests
+const allowedOrigins = [
+  "http://localhost:5173",           // Your local dev frontend
+  "https://city-guardian.vercel.app" // Your deployed Vercel frontend
+  // Add any other origins you need to allow here
+];
+
 app.use(cors({
-  origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like Postman, mobile apps, or server-to-server)
+    // or if the origin is in our allowed list
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('The CORS policy for this site does not allow access from the specified Origin.'));
+    }
+  },
   credentials: true
 }));
+// --- END OF FIX ---
+
 app.use(express.json());
 
 // routes
