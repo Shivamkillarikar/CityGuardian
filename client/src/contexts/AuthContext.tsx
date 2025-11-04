@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [token]);
 
   const login = async (email: string, password: string) => {
-    const res = await api.post("/auth/login", { email, password });
+    const res = await api.post("/api/auth/login", { email, password });
     const { user: u, token: t } = res.data;
 
     setUser(u);
@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const register = async (payload: Record<string, any>) => {
-    const res = await api.post("/auth/register", payload);
+    const res = await api.post("/api/auth/register", payload);
     const { user: u, token: t } = res.data;
 
     setUser(u);
