@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
@@ -11,14 +11,32 @@ import { useNavigate } from "react-router-dom";
 const BACKEND_URL = "https://fastapi-backend-t2e9.onrender.com/send-report";
 
 const Dashboard = () => {
-  const { user, logout } = useAuth(); // 👈 3. Get user and logout from context
-  const navigate = useNavigate(); // 👈 4. Get navigate
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [location, setLocation] = useState("");
   const [complaint, setComplaint] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [lastSubmittedImage, setLastSubmittedImage] = useState<File | null>(null);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setLocation(`${latitude}, ${longitude}`);
+          toast.success("Location detected!");
+        },
+        () => {
+          toast.error("Location permission denied. Please enter manually.");
+        }
+      );
+    } else {
+      toast.error("Geolocation is not supported by this browser.");
+    }
+  }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -46,6 +64,12 @@ const Dashboard = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (image && lastSubmittedImage && image.name === lastSubmittedImage.name && image.size === lastSubmittedImage.size) {
+      toast.error("This report has already been submitted.");
+      return;
+    }
+
     setLoading(true);
     toast.loading("📤 Sending report...");
 
@@ -67,6 +91,7 @@ const Dashboard = () => {
 
       if (res.ok && data.status === "success") {
         toast.success("Report submitted successfully!");
+        setLastSubmittedImage(image);
         setLocation("");
         setComplaint("");
         handleRemoveImage();
@@ -87,7 +112,6 @@ const Dashboard = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      {/* ✅ Logout Button */}
       <Button
         onClick={handleLogout}
         className="absolute top-6 right-8 px-4 py-2 bg-red-500/90 hover:bg-red-600 text-white font-semibold rounded-xl shadow-md transition-all"
@@ -107,7 +131,6 @@ const Dashboard = () => {
 
         <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-4">
-            {/* Full Name */}
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-1">
                 Full Name
@@ -120,7 +143,6 @@ const Dashboard = () => {
               />
             </div>
 
-            {/* Email */}
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-1">
                 Email
@@ -133,14 +155,13 @@ const Dashboard = () => {
               />
             </div>
 
-            {/* Location */}
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-1">
                 Location
               </label>
               <Input
                 type="text"
-                placeholder="Thane West, Mumbai"
+                placeholder="Detecting location..."
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 className="bg-white/40 border border-white/60 text-gray-800 rounded-xl focus:ring-2 focus:ring-blue-300 focus:border-blue-300 transition-all"
@@ -148,7 +169,6 @@ const Dashboard = () => {
               />
             </div>
 
-            {/* Complaint */}
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-1">
                 Describe the Issue
@@ -162,7 +182,6 @@ const Dashboard = () => {
               />
             </div>
 
-            {/* Image Upload */}
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-1">
                 Attach Image (optional)
@@ -192,7 +211,6 @@ const Dashboard = () => {
               )}
             </div>
 
-            {/* Submit Button */}
             <Button
               type="submit"
               className="mt-4 py-2 text-base font-semibold bg-blue-600/90 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-300/40 hover:shadow-blue-400/60 transition-all duration-300"
